@@ -1,0 +1,144 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Deploy's EC2 instance and Elastic IP to use with masTKO
+Parameters:
+  InstanceName:
+    Type: String
+    Description: A unique name given to the instance
+  InstanceType:
+    Type: String
+    Description: EC2 Instance type to use. The default EC2 AMI requires a ARM64 based processor, please choose a compatible EC2 Instance Type. Refer https://aws.amazon.com/ec2/instance-types/ for details.
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: AWS VPC id to use for deployment.
+  SubnetId:
+    Type: AWS::EC2::Subnet::Id
+    Description: AWS VPC Public Subnet ID to place the instance.
+  Ec2ImageId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Description: defaults to latest Amazon Linux 2, change only if necessary
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-arm64-gp2
+  SshPublicKey:
+    Type: String
+    Description: public key to setup SSH access to Ec2 Instance. The access will be through AWS Systems Manager (Session Manger) plugin. Refer https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/session-manager.html
+Resources:
+  Ec2InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: !Sub 'mastko-ssm-login-permissions-for-${InstanceName}'
+          PolicyDocument:
+            Statement:
+              - Action:
+                  - "ssm:UpdateInstanceInformation"
+                  - "ssmmessages:CreateControlChannel"
+                  - "ssmmessages:CreateDataChannel"
+                  - "ssmmessages:OpenControlChannel"
+                  - "ssmmessages:OpenDataChannel"
+                Effect: "Allow"
+                Resource: "*"
+              - Action:
+                  - "s3:GetEncryptionConfiguration"
+                Effect: "Allow"
+                Resource: "*"
+              - Action:
+                  - "kms:Decrypt"
+                Effect: "Allow"
+                Resource: "*"
+        - PolicyName: !Sub 'mastko-bruteforce-permissions-for-${InstanceName}'
+          PolicyDocument:
+            Statement:
+              - Action:
+                  - "ec2:DisassociateAddress"
+                  - "ec2:DescribeAddresses"
+                  - "ec2:DescribeInstances"
+                  - "ec2:CreateTags"
+                  - "ec2:AssociateAddress"
+                Effect: "Allow"
+                Resource: "*"
+
+  Ec2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref Ec2InstanceRole
+  
+  Ec2InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub "In/out traffic for mastko ${InstanceName}"
+      GroupName: !Sub "mastko-${InstanceName}-sg"
+      VpcId: !Ref VpcId
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+  
+  Ec2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref Ec2ImageId
+      InstanceType: !Ref InstanceType
+      IamInstanceProfile: !Ref Ec2InstanceProfile
+      Tags:
+        - Key: Name
+          Value: !Ref InstanceName
+      NetworkInterfaces:
+        - DeviceIndex: "0"
+          AssociatePublicIpAddress: "true"
+          SubnetId: !Ref SubnetId
+          GroupSet:
+            - !GetAtt Ec2InstanceSecurityGroup.GroupId
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+
+          echo ${SshPublicKey} >> /home/ec2-user/.ssh/authorized_keys
+
+          # set up python environment
+          yum -y groupinstall "Development Tools"
+          yum -y install openssl-devel bzip2-devel libffi-devel sqlite-devel libpcap-devel
+          yum -y install wget
+          cd /opt
+          wget https://www.python.org/ftp/python/3.9.10/Python-3.9.10.tgz
+          tar xvf Python-3.9.10.tgz
+          cd Python-3.9.10
+          ./configure --enable-optimizations
+          make altinstall
+          
+          yum install -y nmap git
+
+          export WORKDIR=/opt
+          
+          # Install masscan
+          cd $WORKDIR
+          git clone https://github.com/robertdavidgraham/masscan.git
+          cd masscan
+          make
+          make install
+
+          # Install MasTKO
+          cd $WORKDIR
+          git clone https://github.com/intuit/mastko.git
+          cd mastko
+          python3 -m pip install .
+  EIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  
+
+Outputs:
+  InstanceId:
+    Value: !Ref Ec2Instance
+  EIP:
+    Value: !Ref EIP

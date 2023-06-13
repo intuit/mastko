@@ -1,0 +1,5 @@
+moto==4.1.8
+pytest==7.3.1
+pytest-mock==3.10.0
+types-requests==2.29.0.0
+tox==4.5.1

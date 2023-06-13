@@ -1,0 +1,14 @@
+include README.md
+include LICENSE.md
+include MANIFEST.in
+
+include requirements.txt
+include requirement.dev.txt
+include tox.ini
+
+graft aws
+graft docs
+graft mastko
+
+global-exclude __pycache__
+global-exclude *.py[co]
