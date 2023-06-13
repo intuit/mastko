@@ -22,7 +22,7 @@ optional arguments:
   --version             print out cli version
 
 subcommands:
-  Please select a subcommand. For more information run `stand {sub-command} --help`.
+  Please select a subcommand. For more information run `mastko {sub-command} --help`.
 
   {bruteforce,validate_targets}
                         sub-commands:
@@ -32,7 +32,7 @@ subcommands:
 
 ### validate_targets
 
-This subcommand takes an input DNS hosts as a newline separate file and performs the initial recon to collect contextuals details for the provided host and checks if the DNS are vulnerable to EC2 subdomain takeover. The output is given two ways, as CSV file to users and also loaded to internal DB to facilitate Bruteforcing.
+This subcommand takes an input DNS hosts as a newline separate file and performs the initial recon to collect contextual details for the provided host and checks if the domains are vulnerable to EC2 subdomain takeover. The output is given two ways, as CSV file to users and also loaded to internal DB to facilitate Bruteforcing.
 
 ```
 $ mastko validate_targets --help
@@ -87,7 +87,7 @@ There are a variety of deployment patterns for MasTKO. [Common Deployment Patter
 ![AWS Setup](docs/images/aws_setup.png)
 
 1. MasTKO requires EC2 deployed in public subnet of an AWS VPC. Use the AWS Cloudformation [vpc.yaml](aws/vpc.yaml) to deploy a bare minimum AWS VPC to run MasTKO. This cloudformation outputs the VPC ID and Subnet ID after creation, which will be required for next step. This step is optional if a VPC is already available.
-2. For the bruteforcing function to work, masTKO requires a AWS EC2 host and a Elastic IP. Use the AWS Cloudformation [ec2_setup.yaml](aws/ec2_setup.yaml). This cloudformation template will output the Ec2 Instance Id and the Elastic IP, these values are required for running the `mastko bruteforce` command. The AWS EC2 Instance deployed using the provided Cloudformation template has IAM permissions attached to run the bruteforce function and also AWS SSM permissions to connect to that instance using Session Manager.
+2. For the bruteforcing function to work, masTKO requires a AWS EC2 host and a Elastic IP. Use the AWS Cloudformation [ec2_setup.yaml](aws/ec2_setup.yaml). This cloudformation template will output the EC2 Instance Id and the Elastic IP, these values are required for running the `mastko bruteforce` command. The AWS EC2 Instance deployed using the provided Cloudformation template has IAM permissions attached to run the bruteforce function and also AWS SSM permissions to connect to that instance using Session Manager.
    
 #### AWS References:
 1. To deploy a stack using AWS Cloudformation, follow step 3 in [Getting Started with AWS Cloudformation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/GettingStarted.Walkthrough.html)
@@ -121,7 +121,7 @@ mastko --help
 ### Option 2:
 
 ```
-git clone <path_to_git>
+git clone git@github.com:intuit/mastko.git
 cd mastko
 python3 -m pip install .
 mastko --help
