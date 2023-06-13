@@ -1,0 +1,26 @@
+# system files
+.DS_Store
+
+# virtual env dirs
+.venv
+
+# build/setuputils data files
+*.zip
+*/build/
+build/
+/*.egg-info
+__pycache__/
+*/.python-version
+temp/
+dist/
+maskto.egg-info/
+*.db
+*.csv
+
+# cache dirs
+.coverage*
+.pytest_cache
+.mypy_cache
+.pytest_cache
+*.pyc
+.tox
