@@ -47,7 +47,7 @@ options:
 
 ### bruteforce
 
-#### prequisites:
+#### prerequisites:
 
 * In order to run this command, a dedicated AWS Elastic IP and AWS EC2 instance is required. Refer to [AWS Setup](#aws-setup) section for more details.
 * Requires AWS CLI credentials, please refer to: [Configuration and credential file settings](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) for more details. If you are running MasTKO inside the EC2 Instance created by our cloudformation ([AWS Setup](#aws-setup)), the AWS boto3 SDK will automatically fetch credentials from the attached instance role, no need to set user credentials.
